@@ -8,9 +8,9 @@ const (
 	HIGH
 )
 
-type state []*SecurityNotification
+type Aggregation []*SecurityNotification
 
-func Strategy(evt *SecurityNotification, s state) (*AggregateNotification, state) {
+func Strategy(evt *SecurityNotification, s Aggregation) (*AggregateNotification, Aggregation) {
 	if s == nil {
 		s = make([]*SecurityNotification, 0)
 	}

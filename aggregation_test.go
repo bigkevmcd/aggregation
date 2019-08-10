@@ -6,7 +6,7 @@ import (
 )
 
 func TestAggregation(t *testing.T) {
-	n, s := Strategy(makeNotification("a@example.com"), make(state, 0))
+	n, s := Strategy(makeNotification("a@example.com"), make(Aggregation, 0))
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
 	}
@@ -24,7 +24,7 @@ func TestAggregation(t *testing.T) {
 }
 
 func TestAggregationPublishesOnHighPriorityEvent(t *testing.T) {
-	n, s := Strategy(makeNotification("a@example.com"), make(state, 0))
+	n, s := Strategy(makeNotification("a@example.com"), make(Aggregation, 0))
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
 	}
