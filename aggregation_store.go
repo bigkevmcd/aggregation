@@ -16,15 +16,15 @@ func NewStore(db *badger.DB) *AggregateStore {
 	}
 }
 
-func (a *AggregateStore) Get(id string) (*AggregateNotification, error) {
-	var an AggregateNotification
+func (a *AggregateStore) Get(id string) ([]*SecurityNotification, error) {
+	var sns []*SecurityNotification
 	err := a.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(id))
 		if err != nil {
 			return err
 		}
 		return item.Value(func(val []byte) error {
-			return json.Unmarshal(val, &an)
+			return json.Unmarshal(val, &sns)
 		})
 	})
 
@@ -32,11 +32,11 @@ func (a *AggregateStore) Get(id string) (*AggregateNotification, error) {
 		return nil, nil
 	}
 
-	return &an, nil
+	return sns, nil
 }
 
-func (a *AggregateStore) Save(id string, an *AggregateNotification) error {
-	b, err := json.Marshal(an)
+func (a *AggregateStore) Save(id string, state []*SecurityNotification) error {
+	b, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}

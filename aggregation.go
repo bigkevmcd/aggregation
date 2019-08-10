@@ -11,6 +11,9 @@ const (
 type state []*SecurityNotification
 
 func Strategy(evt *SecurityNotification, s state) (*AggregateNotification, state) {
+	if s == nil {
+		s = make([]*SecurityNotification, 0)
+	}
 	s = append(s, evt)
 	if len(s) == 3 || evt.Priority == HIGH {
 		return &AggregateNotification{
