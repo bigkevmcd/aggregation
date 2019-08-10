@@ -12,7 +12,7 @@ type Aggregation []*SecurityNotification
 
 func Strategy(evt *SecurityNotification, s Aggregation) (*AggregateNotification, Aggregation) {
 	if s == nil {
-		s = make([]*SecurityNotification, 0)
+		s = make(Aggregation, 0)
 	}
 	s = append(s, evt)
 	if len(s) == 3 || evt.Priority == HIGH {
