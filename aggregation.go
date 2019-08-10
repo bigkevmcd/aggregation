@@ -3,16 +3,16 @@ package main
 import "time"
 
 const (
-	LOW    = iota
-	MEDIUM = iota
-	HIGH   = iota
+	LOW = iota
+	MEDIUM
+	HIGH
 )
 
 type state []*SecurityNotification
 
 func Strategy(evt *SecurityNotification, s state) (*AggregateNotification, state) {
 	s = append(s, evt)
-	if len(s) == 3 {
+	if len(s) == 3 || evt.Priority == HIGH {
 		return &AggregateNotification{
 			Notifications: s,
 		}, nil
