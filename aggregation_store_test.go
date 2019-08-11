@@ -11,7 +11,7 @@ import (
 )
 
 func TestGetWithUnknownID(t *testing.T) {
-	store, cleanup := createBadger(t)
+	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
 	a, err := store.Get(testEmail)
@@ -22,7 +22,7 @@ func TestGetWithUnknownID(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	store, cleanup := createBadger(t)
+	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
 	notifications := Aggregation{makeNotification(testEmail)}
@@ -37,7 +37,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestProcessAggregatesWithNoAggregates(t *testing.T) {
-	store, cleanup := createBadger(t)
+	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
 	count := 0
@@ -53,7 +53,7 @@ func TestProcessAggregatesWithNoAggregates(t *testing.T) {
 }
 
 func TestProcessAggregatesWithAnAggregate(t *testing.T) {
-	store, cleanup := createBadger(t)
+	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 	notifications := Aggregation{makeNotification(testEmail)}
 	err := store.Save(testEmail, notifications)
@@ -76,7 +76,7 @@ func TestProcessAggregatesSavesNewAggregates(t *testing.T) {
 }
 
 func TestProcessAggregatesCleansUpAggregates(t *testing.T) {
-	store, cleanup := createBadger(t)
+	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 	notifications := Aggregation{makeNotification(testEmail)}
 	err := store.Save(testEmail, notifications)
@@ -102,7 +102,7 @@ func TestProcessAggregatesCleansUpAggregates(t *testing.T) {
 }
 
 func TestExecuteAggregationWithUnknownCorrelationID(t *testing.T) {
-	store, cleanup := createBadger(t)
+	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
 	publisher := &mockPublisher{}
@@ -116,7 +116,7 @@ func TestExecuteAggregationWithUnknownCorrelationID(t *testing.T) {
 }
 
 func TestExecuteAggregationErrorPublishing(t *testing.T) {
-	store, cleanup := createBadger(t)
+	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 	testError := errors.New("this is a test")
 
@@ -138,7 +138,7 @@ func TestExecuteAggregationErrorPublishing(t *testing.T) {
 	}
 }
 
-func createBadger(t *testing.T) (*AggregateStore, func()) {
+func createBadgerStore(t *testing.T) (*AggregateStore, func()) {
 	dir, err := ioutil.TempDir(os.TempDir(), "badger")
 	if err != nil {
 		t.Fatal(err)
