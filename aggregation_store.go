@@ -25,13 +25,9 @@ func NewStore(db *badger.DB) *AggregateStore {
 func (a *AggregateStore) Get(id string) (Aggregation, error) {
 	var sns Aggregation
 	err := a.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(keyForId(defaultPrefix, id))
-		if err != nil {
-			return err
-		}
-		return item.Value(func(val []byte) error {
-			return json.Unmarshal(val, &sns)
-		})
+		var err error
+		sns, err = getOrEmpty(txn, id)
+		return err
 	})
 
 	if err == badger.ErrKeyNotFound {
@@ -42,7 +38,7 @@ func (a *AggregateStore) Get(id string) (Aggregation, error) {
 }
 
 func (a *AggregateStore) Save(id string, state Aggregation) error {
-	b, err := json.Marshal(state)
+	b, err := marshal(state)
 	if err != nil {
 		return err
 	}
@@ -59,9 +55,10 @@ func (a *AggregateStore) ProcessAggregates(f AggregationProcessor) error {
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
 			itemKey := item.Key()
+
 			err := item.Value(func(v []byte) error {
-				var sns Aggregation
-				if err := json.Unmarshal(v, &sns); err != nil {
+				sns, err := unmarshal(v)
+				if err != nil {
 					return err
 				}
 				// TODO: send a notification
@@ -115,7 +112,20 @@ func getOrEmpty(txn *badger.Txn, id string) (Aggregation, error) {
 	}
 	var sns Aggregation
 	err = item.Value(func(val []byte) error {
-		return json.Unmarshal(val, &sns)
+		sns, err = unmarshal(val)
+		return err
 	})
 	return sns, err
+}
+
+func marshal(a Aggregation) ([]byte, error) {
+	return json.Marshal(a)
+}
+
+func unmarshal(b []byte) (Aggregation, error) {
+	var sns Aggregation
+	if err := json.Unmarshal(b, &sns); err != nil {
+		return nil, err
+	}
+	return sns, nil
 }
