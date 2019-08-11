@@ -29,12 +29,7 @@ func (a *AggregateStore) Get(id string) (Aggregation, error) {
 		sns, err = getOrEmpty(txn, id)
 		return err
 	})
-
-	if err == badger.ErrKeyNotFound {
-		return nil, nil
-	}
-
-	return sns, nil
+	return sns, err
 }
 
 func (a *AggregateStore) Save(id string, state Aggregation) error {
