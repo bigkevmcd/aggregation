@@ -1,4 +1,4 @@
-package main
+package aggregator
 
 import (
 	"io/ioutil"
@@ -8,8 +8,6 @@ import (
 
 	"github.com/dgraph-io/badger"
 )
-
-const testEmail = "a@example.com"
 
 func TestGetWithUnknownID(t *testing.T) {
 	store, cleanup := createBadger(t)

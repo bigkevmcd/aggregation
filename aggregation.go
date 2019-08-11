@@ -1,4 +1,4 @@
-package main
+package aggregator
 
 import "time"
 
@@ -11,12 +11,10 @@ const (
 type Aggregation []*SecurityNotification
 
 func Strategy(evt *SecurityNotification, s Aggregation) (*AggregateNotification, Aggregation) {
-	if s == nil {
-		s = make(Aggregation, 0)
-	}
 	s = append(s, evt)
 	if len(s) == 3 || evt.Priority == HIGH {
 		return &AggregateNotification{
+			Email:         evt.Email,
 			Notifications: s,
 		}, nil
 	}
@@ -31,5 +29,19 @@ type SecurityNotification struct {
 }
 
 type AggregateNotification struct {
+	Email         string
 	Notifications []*SecurityNotification
+}
+
+func TranslatePriority(p int) string {
+	switch p {
+	case LOW:
+		return "low"
+	case MEDIUM:
+		return "medium"
+	case HIGH:
+		return "high"
+	default:
+		return "unknown"
+	}
 }

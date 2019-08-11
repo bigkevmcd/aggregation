@@ -1,4 +1,4 @@
-package main
+package aggregator
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
-var defaultPrefix = "aggregation"
+var defaultPrefix = "aggregator"
 
 type AggregationProcessor func(state Aggregation) (*AggregateNotification, Aggregation)
 

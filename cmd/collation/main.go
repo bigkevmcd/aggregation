@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/dgraph-io/badger"
+
+	"github.com/bigkevmcd/aggregator"
 )
 
 func main() {
@@ -16,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	store := NewStore(db)
+	store := aggregator.NewStore(db)
 
 	http.HandleFunc("/notifications", makeHandler(store))
 
@@ -25,9 +27,9 @@ func main() {
 
 }
 
-func makeHandler(store *AggregateStore) func(http.ResponseWriter, *http.Request) {
+func makeHandler(store *aggregator.AggregateStore) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var sn SecurityNotification
+		var sn aggregator.SecurityNotification
 		dec := json.NewDecoder(r.Body)
 		err := dec.Decode(&sn)
 		if err != nil {
@@ -41,7 +43,7 @@ func makeHandler(store *AggregateStore) func(http.ResponseWriter, *http.Request)
 			return
 		}
 
-		n, s := Strategy(&sn, existingState)
+		n, s := aggregator.Strategy(&sn, existingState)
 		err = store.Save(correlationID, s)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -49,7 +51,7 @@ func makeHandler(store *AggregateStore) func(http.ResponseWriter, *http.Request)
 		}
 
 		if n != nil {
-			log.Printf("new event emitted: %#v\n", n)
+			log.Printf("new event emitted for user %s\n", n.Email)
 		}
 
 	}
