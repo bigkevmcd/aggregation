@@ -1,6 +1,7 @@
 package aggregator
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -100,6 +101,43 @@ func TestProcessAggregatesCleansUpAggregates(t *testing.T) {
 	}
 }
 
+func TestExecuteAggregationWithUnknownCorrelationID(t *testing.T) {
+	store, cleanup := createBadger(t)
+	defer cleanup()
+
+	publisher := &mockPublisher{}
+	notification := makeNotification(testEmail)
+
+	err := store.ExecuteAggregation(notification, Strategy, publisher)
+	fatalIfError(t, err)
+	if l := len(publisher.published); l != 1 {
+		t.Fatalf("publishing notifications: got %d, wanted 1", l)
+	}
+}
+
+func TestExecuteAggregationErrorPublishing(t *testing.T) {
+	store, cleanup := createBadger(t)
+	defer cleanup()
+	testError := errors.New("this is a test")
+
+	publisher := &mockPublisher{}
+	publisher.err = testError
+	notification := makeNotification(testEmail)
+
+	err := store.ExecuteAggregation(notification, Strategy, publisher)
+	if err != testError {
+		t.Fatalf("got error %s, wanted %s", err, testError)
+	}
+	if l := len(publisher.published); l != 1 {
+		t.Fatalf("publishing notifications: got %d, wanted 1", l)
+	}
+	loaded, err := store.Get(testEmail)
+	fatalIfError(t, err)
+	if loaded != nil {
+		t.Fatalf("saved aggregate despite error: %#v", loaded)
+	}
+}
+
 func createBadger(t *testing.T) (*AggregateStore, func()) {
 	dir, err := ioutil.TempDir(os.TempDir(), "badger")
 	if err != nil {
@@ -121,4 +159,14 @@ func fatalIfError(t *testing.T, err error) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+type mockPublisher struct {
+	published []*AggregateNotification
+	err       error
+}
+
+func (m *mockPublisher) Publish(n *AggregateNotification) error {
+	m.published = append(m.published, n)
+	return m.err
 }

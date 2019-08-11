@@ -10,6 +10,7 @@ import (
 var defaultPrefix = "aggregator"
 
 type AggregationProcessor func(state Aggregation) (*AggregateNotification, Aggregation)
+type StrategyFunc func(*SecurityNotification, Aggregation) (*AggregateNotification, Aggregation)
 
 type AggregateStore struct {
 	db *badger.DB
@@ -80,6 +81,41 @@ func (a *AggregateStore) ProcessAggregates(f AggregationProcessor) error {
 	return err
 }
 
+func (a *AggregateStore) ExecuteAggregation(n *SecurityNotification, f StrategyFunc, p Publisher) error {
+	return a.db.Update(func(txn *badger.Txn) error {
+		id := n.Email
+		previous, err := getOrEmpty(txn, id)
+		if err != nil {
+			return err
+		}
+		n, newState := f(n, previous)
+		err = p.Publish(n)
+		if err != nil {
+			return err
+		}
+		b, err := json.Marshal(newState)
+		if err != nil {
+			return err
+		}
+		return txn.Set(keyForId(defaultPrefix, id), b)
+	})
+}
+
 func keyForId(prefix, id string) []byte {
 	return []byte(fmt.Sprintf("%s:%s", prefix, id))
+}
+
+func getOrEmpty(txn *badger.Txn, id string) (Aggregation, error) {
+	item, err := txn.Get(keyForId(defaultPrefix, id))
+	if err == badger.ErrKeyNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var sns Aggregation
+	err = item.Value(func(val []byte) error {
+		return json.Unmarshal(val, &sns)
+	})
+	return sns, err
 }
