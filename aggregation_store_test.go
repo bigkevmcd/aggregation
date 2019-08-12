@@ -1,6 +1,7 @@
 package aggregator
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -35,71 +36,6 @@ func TestSave(t *testing.T) {
 	}
 }
 
-func TestProcessAggregatesWithNoAggregates(t *testing.T) {
-	store, cleanup := createBadgerStore(t)
-	defer cleanup()
-
-	count := 0
-	err := store.ProcessAggregates(func(state Aggregation) (*AggregateNotification, Aggregation) {
-		count++
-		return nil, nil
-	})
-
-	fatalIfError(t, err)
-	if count != 0 {
-		t.Fatalf("processed aggregates: got %d, wanted 0", count)
-	}
-}
-
-func TestProcessAggregatesWithAnAggregate(t *testing.T) {
-	store, cleanup := createBadgerStore(t)
-	defer cleanup()
-	notifications := Aggregation{makeNotification(testEmail)}
-	err := store.Save(testEmail, notifications)
-	fatalIfError(t, err)
-
-	count := 0
-	err = store.ProcessAggregates(func(state Aggregation) (*AggregateNotification, Aggregation) {
-		count++
-		return nil, nil
-	})
-	fatalIfError(t, err)
-
-	if count != 1 {
-		t.Fatalf("processed aggregates: got %d, wanted 1", count)
-	}
-}
-
-func TestProcessAggregatesSavesNewAggregates(t *testing.T) {
-	t.Skip()
-}
-
-func TestProcessAggregatesCleansUpAggregates(t *testing.T) {
-	store, cleanup := createBadgerStore(t)
-	defer cleanup()
-	notifications := Aggregation{makeNotification(testEmail)}
-	err := store.Save(testEmail, notifications)
-	fatalIfError(t, err)
-
-	count := 0
-	err = store.ProcessAggregates(func(state Aggregation) (*AggregateNotification, Aggregation) {
-		count++
-		return nil, nil
-	})
-	fatalIfError(t, err)
-
-	newCount := 0
-	err = store.ProcessAggregates(func(state Aggregation) (*AggregateNotification, Aggregation) {
-		newCount++
-		return nil, nil
-	})
-	fatalIfError(t, err)
-
-	if newCount != 0 {
-		t.Fatalf("reprocessed aggregates: got %d, wanted 0", newCount)
-	}
-}
-
 func TestProcessNotificationWithNoPreviousState(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
@@ -124,7 +60,6 @@ func TestProcessNotificationUpdatesExistingState(t *testing.T) {
 	fatalIfError(t, err)
 	processor := &mockProcessor{}
 	notification := makeNotification(testEmail)
-
 	processor.returnAggregation = Aggregation{makeNotification(testEmail), makeNotification(testEmail)}
 
 	err = store.ProcessNotification(notification, processor)
@@ -141,28 +76,26 @@ func TestProcessNotificationUpdatesExistingState(t *testing.T) {
 	}
 }
 
-// func TestExecuteAggregationErrorPublishing(t *testing.T) {
-// 	store, cleanup := createBadgerStore(t)
-// 	defer cleanup()
-// 	testError := errors.New("this is a test")
+func TestExecuteAggregationErrorPublishing(t *testing.T) {
+	store, cleanup := createBadgerStore(t)
+	defer cleanup()
+	testError := errors.New("this is a test")
 
-// 	publisher := &mockPublisher{}
-// 	publisher.err = testError
-// 	notification := makeNotification(testEmail)
+	processor := &mockProcessor{}
+	processor.err = testError
+	notification := makeNotification(testEmail)
 
-// 	err := store.ExecuteAggregation(notification, Strategy, publisher)
-// 	if err != testError {
-// 		t.Fatalf("got error %s, wanted %s", err, testError)
-// 	}
-// 	if l := len(publisher.published); l != 1 {
-// 		t.Fatalf("publishing notifications: got %d, wanted 1", l)
-// 	}
-// 	loaded, err := store.Get(testEmail)
-// 	fatalIfError(t, err)
-// 	if loaded != nil {
-// 		t.Fatalf("saved aggregate despite error: %#v", loaded)
-// 	}
-// }
+	err := store.ProcessNotification(notification, processor)
+	if err != testError {
+		t.Fatalf("got error %s, wanted %s", err, testError)
+	}
+
+	loaded, err := store.Get(testEmail)
+	fatalIfError(t, err)
+	if loaded != nil {
+		t.Fatalf("saved aggregate despite error: %#v", loaded)
+	}
+}
 
 func createBadgerStore(t *testing.T) (*AggregateStore, func()) {
 	dir, err := ioutil.TempDir(os.TempDir(), "badger")
