@@ -46,7 +46,7 @@ func makeHandler(store *aggregator.AggregateStore) func(http.ResponseWriter, *ht
 		n, s := aggregator.Strategy(&sn, existingState)
 		err = store.Save(correlationID, s)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

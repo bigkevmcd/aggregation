@@ -10,7 +10,6 @@ import (
 var defaultPrefix = "aggregator"
 
 type AggregationProcessor func(state Aggregation) (*AggregateNotification, Aggregation)
-type StrategyFunc func(*SecurityNotification, Aggregation) (*AggregateNotification, Aggregation)
 
 type AggregateStore struct {
 	db *badger.DB
@@ -73,15 +72,14 @@ func (a *AggregateStore) ProcessAggregates(f AggregationProcessor) error {
 	return err
 }
 
-func (a *AggregateStore) ExecuteAggregation(n *SecurityNotification, f StrategyFunc, p Publisher) error {
+func (a *AggregateStore) ProcessNotification(n *SecurityNotification, p Processor) error {
 	return a.db.Update(func(txn *badger.Txn) error {
 		id := n.Email
 		previous, err := getOrEmpty(txn, id)
 		if err != nil {
 			return err
 		}
-		n, newState := f(n, previous)
-		err = p.Publish(n)
+		newState, err := p.Process(n, previous)
 		if err != nil {
 			return err
 		}
