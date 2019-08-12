@@ -19,15 +19,16 @@ func main() {
 	}
 
 	store := aggregator.NewStore(db)
+	publisher := &aggregator.PublishingProcessor{}
 
-	http.HandleFunc("/notifications", makeHandler(store))
+	http.HandleFunc("/notifications", makeHandler(store, publisher))
 
 	fmt.Printf("receiving on http://localhost:8080/notifications\n")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
 
-func makeHandler(store *aggregator.AggregateStore) func(http.ResponseWriter, *http.Request) {
+func makeHandler(store *aggregator.AggregateStore, processor aggregator.Processor) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var sn aggregator.SecurityNotification
 		dec := json.NewDecoder(r.Body)
@@ -36,23 +37,11 @@ func makeHandler(store *aggregator.AggregateStore) func(http.ResponseWriter, *ht
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		correlationID := sn.Email
-		existingState, err := store.Get(correlationID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
 
-		n, s := aggregator.Strategy(&sn, existingState)
-		err = store.Save(correlationID, s)
+		err = store.ProcessNotification(&sn, processor)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		if n != nil {
-			log.Printf("new event emitted for user %s\n", n.Email)
-		}
-
 	}
 }
