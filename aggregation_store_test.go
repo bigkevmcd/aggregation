@@ -125,7 +125,7 @@ func TestProcessNotificationUpdatesExistingState(t *testing.T) {
 	processor := &mockProcessor{}
 	notification := makeNotification(testEmail)
 
-	processor.notifications = Aggregation{makeNotification(testEmail), makeNotification(testEmail)}
+	processor.returnAggregation = Aggregation{makeNotification(testEmail), makeNotification(testEmail)}
 
 	err = store.ProcessNotification(notification, processor)
 
@@ -136,8 +136,8 @@ func TestProcessNotificationUpdatesExistingState(t *testing.T) {
 
 	loaded, err := store.Get(testEmail)
 	fatalIfError(t, err)
-	if loaded != nil {
-		t.Fatalf("got %#v, wanted %#v", loaded, notifications)
+	if !reflect.DeepEqual(processor.returnAggregation, loaded) {
+		t.Fatalf("got %#v, wanted %#v", loaded, processor.returnAggregation)
 	}
 }
 
