@@ -45,6 +45,39 @@ func TestAggregationPublishesOnHighPriorityEvent(t *testing.T) {
 	}
 }
 
+func TestAggregationWithoutEventAndEmptyState(t *testing.T) {
+	n, s := Strategy(nil, make(Aggregation, 0))
+	if n != nil {
+		t.Fatalf("unexpectedly received a notification: got %#v", n)
+	}
+	if s != nil {
+		t.Fatalf("got aggregation state: %#v", s)
+	}
+}
+
+func TestAggregationWithoutEventOldNotifications(t *testing.T) {
+	oldNotification := makeNotification(testEmail)
+	oldNotification.Timestamp = time.Now().UTC().Add(time.Hour * -4)
+
+	a := Aggregation{makeNotification(testEmail), oldNotification}
+	n, s := Strategy(nil, a)
+
+	if n == nil {
+		t.Fatal("expected a notification, got nil")
+	}
+	if n.Email != testEmail {
+		t.Fatalf("incorrect aggregate email: got %s, wanted %s", n.Email, testEmail)
+	}
+	if l := len(n.Notifications); l != 2 {
+		t.Fatalf("expected 3 messages in the aggregation, got %d", l)
+	}
+
+	if s != nil {
+		t.Fatalf("got aggregation state: %#v", s)
+	}
+
+}
+
 func makeNotification(email string) *SecurityNotification {
 	return &SecurityNotification{
 		Email:        email,
