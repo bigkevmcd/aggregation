@@ -37,6 +37,21 @@ func TestSave(t *testing.T) {
 	}
 }
 
+func TestSaveUpdatesLastUpdated(t *testing.T) {
+	store, cleanup := createBadgerStore(t)
+	defer cleanup()
+
+	notifications := makeAggregation(makeNotification(testEmail))
+	err := store.Save(testEmail, notifications)
+	fatalIfError(t, err)
+
+	loaded, err := store.Get(testEmail)
+	fatalIfError(t, err)
+	if !reflect.DeepEqual(notifications, loaded) {
+		t.Fatalf("save failed to save: wanted %#v, got %#v", notifications, loaded)
+	}
+}
+
 func TestProcessNotificationWithNoPreviousState(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
