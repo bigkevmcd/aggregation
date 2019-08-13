@@ -93,7 +93,55 @@ func TestExecuteAggregationErrorPublishing(t *testing.T) {
 	loaded, err := store.Get(testEmail)
 	fatalIfError(t, err)
 	if loaded != nil {
-		t.Fatalf("saved aggregate despite error: %#v", loaded)
+		t.Fatalf("saved aggregation despite error: %#v", loaded)
+	}
+}
+
+func TestProcessAggregationsWithNoAggregations(t *testing.T) {
+	store, cleanup := createBadgerStore(t)
+	defer cleanup()
+	processor := &mockAggregationProcessor{}
+
+	err := store.ProcessAggregations(processor)
+	fatalIfError(t, err)
+
+	if processor.count != 0 {
+		t.Fatalf("processed aggregations: got %d, wanted 0", processor.count)
+	}
+}
+
+func TestProcessAggregationsWithAnAggregate(t *testing.T) {
+	store, cleanup := createBadgerStore(t)
+	defer cleanup()
+	notifications := Aggregation{makeNotification(testEmail)}
+	err := store.Save(testEmail, notifications)
+	fatalIfError(t, err)
+	processor := &mockAggregationProcessor{}
+
+	err = store.ProcessAggregations(processor)
+	fatalIfError(t, err)
+
+	if processor.count != 1 {
+		t.Fatalf("processed aggregations: got %d, wanted 1", processor.count)
+	}
+}
+
+func TestProcessAggregationsCleansUpAggregations(t *testing.T) {
+	store, cleanup := createBadgerStore(t)
+	defer cleanup()
+	notifications := Aggregation{makeNotification(testEmail)}
+	err := store.Save(testEmail, notifications)
+	fatalIfError(t, err)
+	processor1 := &mockAggregationProcessor{}
+	err = store.ProcessAggregations(processor1)
+	fatalIfError(t, err)
+
+	processor2 := &mockAggregationProcessor{}
+	err = store.ProcessAggregations(processor2)
+	fatalIfError(t, err)
+
+	if processor2.count != 0 {
+		t.Fatalf("reprocessed aggregations: got %d, wanted 0", processor2.count)
 	}
 }
 
@@ -131,4 +179,14 @@ func (p *mockProcessor) Process(n *SecurityNotification, a Aggregation) (Aggrega
 	p.processedNotification = n
 	p.processedAggregation = a
 	return p.returnAggregation, p.err
+}
+
+type mockAggregationProcessor struct {
+	count int32
+	err   error
+}
+
+func (p *mockAggregationProcessor) Process(a Aggregation) (Aggregation, error) {
+	p.count++
+	return nil, p.err
 }

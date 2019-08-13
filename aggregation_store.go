@@ -50,12 +50,29 @@ func (a *AggregateStore) ProcessNotification(n *SecurityNotification, p Processo
 		if err != nil {
 			return err
 		}
-		b, err := json.Marshal(newState)
+		b, err := marshal(newState)
 		if err != nil {
 			return err
 		}
 		return txn.Set(keyForId(defaultPrefix, id), b)
 	})
+}
+
+func (a *AggregateStore) ProcessAggregations(p AggregationProcessor) error {
+	err := a.db.Update(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+		prefix := []byte(defaultPrefix)
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			err := processItem(txn, item, item.Key(), p)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
 }
 
 func keyForId(prefix, id string) []byte {
@@ -88,4 +105,22 @@ func unmarshal(b []byte) (Aggregation, error) {
 		return nil, err
 	}
 	return sns, nil
+}
+
+func processItem(txn *badger.Txn, item *badger.Item, key []byte, p AggregationProcessor) error {
+	err := item.Value(func(v []byte) error {
+		state, err := unmarshal(v)
+		if err != nil {
+			return err
+		}
+		newState, err := p.Process(state)
+		if err != nil {
+			return err
+		}
+		if newState == nil {
+			txn.Delete(key)
+		}
+		return nil
+	})
+	return err
 }
