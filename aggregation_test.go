@@ -8,7 +8,7 @@ import (
 const testEmail = "a@example.com"
 
 func TestAggregation(t *testing.T) {
-	n, s := Strategy(makeNotification(testEmail), make(Aggregation, 0))
+	n, s := Strategy(makeNotification(testEmail), makeAggregation())
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
 	}
@@ -29,7 +29,7 @@ func TestAggregation(t *testing.T) {
 }
 
 func TestAggregationPublishesOnHighPriorityEvent(t *testing.T) {
-	n, s := Strategy(makeNotification(testEmail), make(Aggregation, 0))
+	n, s := Strategy(makeNotification(testEmail), makeAggregation())
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
 	}
@@ -46,7 +46,7 @@ func TestAggregationPublishesOnHighPriorityEvent(t *testing.T) {
 }
 
 func TestAggregationWithoutEventAndEmptyState(t *testing.T) {
-	n, s := Strategy(nil, make(Aggregation, 0))
+	n, s := Strategy(nil, makeAggregation())
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
 	}
@@ -59,7 +59,7 @@ func TestAggregationWithoutEventOldNotifications(t *testing.T) {
 	oldNotification := makeNotification(testEmail)
 	oldNotification.Timestamp = time.Now().UTC().Add(time.Hour * -4)
 
-	a := Aggregation{makeNotification(testEmail), oldNotification}
+	a := makeAggregation(makeNotification(testEmail), oldNotification)
 	n, s := Strategy(nil, a)
 
 	if n == nil {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/dgraph-io/badger"
 )
@@ -25,7 +26,7 @@ func TestSave(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
-	notifications := Aggregation{makeNotification(testEmail)}
+	notifications := makeAggregation(makeNotification(testEmail))
 	err := store.Save(testEmail, notifications)
 	fatalIfError(t, err)
 
@@ -55,12 +56,12 @@ func TestProcessNotificationUpdatesExistingState(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
-	notifications := Aggregation{makeNotification(testEmail)}
+	notifications := makeAggregation(makeNotification(testEmail))
 	err := store.Save(testEmail, notifications)
 	fatalIfError(t, err)
 	processor := &mockProcessor{}
 	notification := makeNotification(testEmail)
-	processor.returnAggregation = Aggregation{makeNotification(testEmail), makeNotification(testEmail)}
+	processor.returnAggregation = makeAggregation(makeNotification(testEmail), makeNotification(testEmail))
 
 	err = store.ProcessNotification(notification, processor)
 
@@ -113,7 +114,7 @@ func TestProcessAggregationsWithNoAggregations(t *testing.T) {
 func TestProcessAggregationsWithAnAggregate(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
-	notifications := Aggregation{makeNotification(testEmail)}
+	notifications := makeAggregation(makeNotification(testEmail))
 	err := store.Save(testEmail, notifications)
 	fatalIfError(t, err)
 	processor := &mockAggregationProcessor{}
@@ -129,7 +130,7 @@ func TestProcessAggregationsWithAnAggregate(t *testing.T) {
 func TestProcessAggregationsCleansUpAggregations(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
-	notifications := Aggregation{makeNotification(testEmail)}
+	notifications := makeAggregation(makeNotification(testEmail))
 	err := store.Save(testEmail, notifications)
 	fatalIfError(t, err)
 	processor1 := &mockAggregationProcessor{}
@@ -161,6 +162,14 @@ func createBadgerStore(t *testing.T) (*AggregateStore, func()) {
 	}
 }
 
+func makeAggregation(n ...*SecurityNotification) *Aggregation {
+	return &Aggregation{
+		Email:         testEmail,
+		LastUpdated:   time.Now().UTC(),
+		Notifications: n,
+	}
+}
+
 func fatalIfError(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
@@ -170,12 +179,12 @@ func fatalIfError(t *testing.T, err error) {
 
 type mockProcessor struct {
 	processedNotification *SecurityNotification
-	processedAggregation  Aggregation
-	returnAggregation     Aggregation
+	processedAggregation  *Aggregation
+	returnAggregation     *Aggregation
 	err                   error
 }
 
-func (p *mockProcessor) Process(n *SecurityNotification, a Aggregation) (Aggregation, error) {
+func (p *mockProcessor) Process(n *SecurityNotification, a *Aggregation) (*Aggregation, error) {
 	p.processedNotification = n
 	p.processedAggregation = a
 	return p.returnAggregation, p.err
@@ -186,7 +195,7 @@ type mockAggregationProcessor struct {
 	err   error
 }
 
-func (p *mockAggregationProcessor) Process(a Aggregation) (Aggregation, error) {
+func (p *mockAggregationProcessor) Process(a *Aggregation) (*Aggregation, error) {
 	p.count++
 	return nil, p.err
 }
