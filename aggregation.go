@@ -1,6 +1,8 @@
 package aggregator
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	LOW = iota
@@ -24,10 +26,7 @@ func Strategy(evt *SecurityNotification, s *Aggregation) (*AggregateNotification
 	}
 	s.Notifications = append(s.Notifications, evt)
 	if len(s.Notifications) == 3 || evt.Priority == HIGH {
-		return &AggregateNotification{
-			Email:         evt.Email,
-			Notifications: s.Notifications,
-		}, nil
+		return aggregationToNotification(s), nil
 	}
 	return nil, s
 }
@@ -35,12 +34,16 @@ func Strategy(evt *SecurityNotification, s *Aggregation) (*AggregateNotification
 func processAggregationWithoutEvent(s *Aggregation) (*AggregateNotification, *Aggregation) {
 	cutOffTime := clock().Add(time.Hour * -3)
 	if s.LastUpdated.Before(cutOffTime) {
-		return &AggregateNotification{
-			Email:         s.Email,
-			Notifications: s.Notifications,
-		}, nil
+		return aggregationToNotification(s), nil
 	}
 	return nil, s
+}
+
+func aggregationToNotification(s *Aggregation) *AggregateNotification {
+	return &AggregateNotification{
+		Email:         s.Email,
+		Notifications: s.Notifications,
+	}
 }
 
 type SecurityNotification struct {
