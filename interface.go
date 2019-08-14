@@ -12,7 +12,7 @@ type Publisher interface {
 // the current aggregate state for that event, returns the new state and an
 // error if any.
 type Processor interface {
-	Process(*SecurityNotification, Aggregation) (Aggregation, error)
+	Process(*SecurityNotification, *Aggregation) (*Aggregation, error)
 }
 
 // AggregationProcessor handles bulk aggregation processing.
@@ -20,5 +20,5 @@ type Processor interface {
 // There is no new event in this case, if it returns nil, then the existing
 // state should be removed from the aggregation store.
 type AggregationProcessor interface {
-	Process(Aggregation) (Aggregation, error)
+	Process(*Aggregation) (*Aggregation, error)
 }

@@ -8,7 +8,7 @@ import (
 const testEmail = "a@example.com"
 
 func TestAggregation(t *testing.T) {
-	n, s := Strategy(makeNotification(testEmail), make(Aggregation, 0))
+	n, s := Strategy(makeNotification(testEmail), makeAggregation())
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
 	}
@@ -29,7 +29,7 @@ func TestAggregation(t *testing.T) {
 }
 
 func TestAggregationPublishesOnHighPriorityEvent(t *testing.T) {
-	n, s := Strategy(makeNotification(testEmail), make(Aggregation, 0))
+	n, s := Strategy(makeNotification(testEmail), makeAggregation())
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
 	}
@@ -46,20 +46,20 @@ func TestAggregationPublishesOnHighPriorityEvent(t *testing.T) {
 }
 
 func TestAggregationWithoutEventAndEmptyState(t *testing.T) {
-	n, s := Strategy(nil, make(Aggregation, 0))
+	oldState := makeAggregation()
+	n, s := Strategy(nil, oldState)
+
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
 	}
-	if s != nil {
-		t.Fatalf("got aggregation state: %#v", s)
+	if s != oldState {
+		t.Fatalf("got aggregation state %#v, wanted %#v", s, oldState)
 	}
 }
 
 func TestAggregationWithoutEventOldNotifications(t *testing.T) {
-	oldNotification := makeNotification(testEmail)
-	oldNotification.Timestamp = time.Now().UTC().Add(time.Hour * -4)
-
-	a := Aggregation{makeNotification(testEmail), oldNotification}
+	a := makeAggregation(makeNotification(testEmail), makeNotification(testEmail))
+	a.LastUpdated = time.Now().UTC().Add(time.Hour * -4)
 	n, s := Strategy(nil, a)
 
 	if n == nil {
@@ -69,7 +69,7 @@ func TestAggregationWithoutEventOldNotifications(t *testing.T) {
 		t.Fatalf("incorrect aggregate email: got %s, wanted %s", n.Email, testEmail)
 	}
 	if l := len(n.Notifications); l != 2 {
-		t.Fatalf("expected 3 messages in the aggregation, got %d", l)
+		t.Fatalf("expected 2	 messages in the aggregation, got %d", l)
 	}
 
 	if s != nil {

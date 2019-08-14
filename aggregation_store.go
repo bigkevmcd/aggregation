@@ -19,8 +19,8 @@ func NewStore(db *badger.DB) *AggregateStore {
 	}
 }
 
-func (a *AggregateStore) Get(id string) (Aggregation, error) {
-	var sns Aggregation
+func (a *AggregateStore) Get(id string) (*Aggregation, error) {
+	var sns *Aggregation
 	err := a.db.View(func(txn *badger.Txn) error {
 		var err error
 		sns, err = getOrEmpty(txn, id)
@@ -29,7 +29,8 @@ func (a *AggregateStore) Get(id string) (Aggregation, error) {
 	return sns, err
 }
 
-func (a *AggregateStore) Save(id string, state Aggregation) error {
+func (a *AggregateStore) Save(id string, state *Aggregation) error {
+	state.LastUpdated = clock()
 	b, err := marshal(state)
 	if err != nil {
 		return err
@@ -79,7 +80,7 @@ func keyForId(prefix, id string) []byte {
 	return []byte(fmt.Sprintf("%s:%s", prefix, id))
 }
 
-func getOrEmpty(txn *badger.Txn, id string) (Aggregation, error) {
+func getOrEmpty(txn *badger.Txn, id string) (*Aggregation, error) {
 	item, err := txn.Get(keyForId(defaultPrefix, id))
 	if err == badger.ErrKeyNotFound {
 		return nil, nil
@@ -87,7 +88,7 @@ func getOrEmpty(txn *badger.Txn, id string) (Aggregation, error) {
 	if err != nil {
 		return nil, err
 	}
-	var sns Aggregation
+	var sns *Aggregation
 	err = item.Value(func(val []byte) error {
 		sns, err = unmarshal(val)
 		return err
@@ -95,16 +96,16 @@ func getOrEmpty(txn *badger.Txn, id string) (Aggregation, error) {
 	return sns, err
 }
 
-func marshal(a Aggregation) ([]byte, error) {
+func marshal(a *Aggregation) ([]byte, error) {
 	return json.Marshal(a)
 }
 
-func unmarshal(b []byte) (Aggregation, error) {
-	var sns Aggregation
-	if err := json.Unmarshal(b, &sns); err != nil {
+func unmarshal(b []byte) (*Aggregation, error) {
+	var agg Aggregation
+	if err := json.Unmarshal(b, &agg); err != nil {
 		return nil, err
 	}
-	return sns, nil
+	return &agg, nil
 }
 
 func processItem(txn *badger.Txn, item *badger.Item, key []byte, p AggregationProcessor) error {
