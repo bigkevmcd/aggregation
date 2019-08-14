@@ -26,29 +26,38 @@ func TestSave(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
-	notifications := makeAggregation(makeNotification(testEmail))
-	err := store.Save(testEmail, notifications)
+	agg := makeAggregation(makeNotification(testEmail))
+	err := store.Save(testEmail, agg)
 	fatalIfError(t, err)
 
 	loaded, err := store.Get(testEmail)
 	fatalIfError(t, err)
-	if !reflect.DeepEqual(notifications, loaded) {
-		t.Fatalf("save failed to save: wanted %#v, got %#v", notifications, loaded)
+	if !reflect.DeepEqual(agg, loaded) {
+		t.Fatalf("save failed to save: wanted %#v, got %#v", agg, loaded)
 	}
 }
 
-func TestSaveUpdatesLastUpdated(t *testing.T) {
+func TestSaveUpdatesLastSaved(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
+	oldClock := clock
+	defer func() {
+		clock = oldClock
+	}()
+	lastUpdated := time.Now().UTC()
+	clock = func() time.Time {
+		return lastUpdated
+	}
 
-	notifications := makeAggregation(makeNotification(testEmail))
-	err := store.Save(testEmail, notifications)
+	agg := makeAggregation(makeNotification(testEmail))
+
+	err := store.Save(testEmail, agg)
 	fatalIfError(t, err)
 
 	loaded, err := store.Get(testEmail)
 	fatalIfError(t, err)
-	if !reflect.DeepEqual(notifications, loaded) {
-		t.Fatalf("save failed to save: wanted %#v, got %#v", notifications, loaded)
+	if !loaded.LastSaved.Equal(lastUpdated) {
+		t.Fatalf("last updated field not changed: got %v, wanted %v", loaded.LastSaved, lastUpdated)
 	}
 }
 
@@ -71,8 +80,8 @@ func TestProcessNotificationUpdatesExistingState(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
-	notifications := makeAggregation(makeNotification(testEmail))
-	err := store.Save(testEmail, notifications)
+	agg := makeAggregation(makeNotification(testEmail))
+	err := store.Save(testEmail, agg)
 	fatalIfError(t, err)
 	processor := &mockProcessor{}
 	notification := makeNotification(testEmail)
@@ -129,8 +138,8 @@ func TestProcessAggregationsWithNoAggregations(t *testing.T) {
 func TestProcessAggregationsWithAnAggregate(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
-	notifications := makeAggregation(makeNotification(testEmail))
-	err := store.Save(testEmail, notifications)
+	agg := makeAggregation(makeNotification(testEmail))
+	err := store.Save(testEmail, agg)
 	fatalIfError(t, err)
 	processor := &mockAggregationProcessor{}
 
@@ -145,8 +154,8 @@ func TestProcessAggregationsWithAnAggregate(t *testing.T) {
 func TestProcessAggregationsCleansUpAggregations(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
-	notifications := makeAggregation(makeNotification(testEmail))
-	err := store.Save(testEmail, notifications)
+	agg := makeAggregation(makeNotification(testEmail))
+	err := store.Save(testEmail, agg)
 	fatalIfError(t, err)
 	processor1 := &mockAggregationProcessor{}
 	err = store.ProcessAggregations(processor1)
@@ -180,7 +189,7 @@ func createBadgerStore(t *testing.T) (*AggregateStore, func()) {
 func makeAggregation(n ...*SecurityNotification) *Aggregation {
 	return &Aggregation{
 		Email:         testEmail,
-		LastUpdated:   time.Now().UTC(),
+		LastSaved:     time.Now().UTC(),
 		Notifications: n,
 	}
 }

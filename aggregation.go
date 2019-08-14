@@ -16,7 +16,7 @@ var clock = func() time.Time {
 
 type Aggregation struct {
 	Email         string
-	LastUpdated   time.Time
+	LastSaved     time.Time
 	Notifications []*SecurityNotification
 }
 
@@ -33,7 +33,7 @@ func Strategy(evt *SecurityNotification, s *Aggregation) (*AggregateNotification
 
 func processAggregationWithoutEvent(s *Aggregation) (*AggregateNotification, *Aggregation) {
 	cutOffTime := clock().Add(time.Hour * -3)
-	if s.LastUpdated.Before(cutOffTime) {
+	if s.LastSaved.Before(cutOffTime) {
 		return aggregationToNotification(s), nil
 	}
 	return nil, s
