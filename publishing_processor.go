@@ -14,3 +14,12 @@ func (p *PublishingProcessor) Process(evt *SecurityNotification, oldState *Aggre
 	return newState, nil
 
 }
+
+func (p *PublishingProcessor) ProcessWithoutEvent(existingState *Aggregation) (*Aggregation, error) {
+	notification, newState := StrategyWithoutEvent(oldState)
+	if notification == nil {
+		return newState, nil
+	}
+	log.Printf("publishing %#v\n", notification)
+	return newState, nil
+}

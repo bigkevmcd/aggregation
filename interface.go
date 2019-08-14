@@ -20,5 +20,5 @@ type Processor interface {
 // There is no new event in this case, if it returns nil, then the existing
 // state should be removed from the aggregation store.
 type AggregationProcessor interface {
-	Process(*Aggregation) (*Aggregation, error)
+	ProcessWithoutEvent(*Aggregation) (*Aggregation, error)
 }
