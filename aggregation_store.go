@@ -30,7 +30,7 @@ func (a *AggregateStore) Get(id string) (*Aggregation, error) {
 }
 
 func (a *AggregateStore) Save(id string, state *Aggregation) error {
-	state.LastSaved = clock()
+	state.LastUpdated = clock()
 	b, err := marshal(state)
 	if err != nil {
 		return err

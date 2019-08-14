@@ -59,7 +59,7 @@ func TestAggregationWithoutEventAndEmptyState(t *testing.T) {
 
 func TestAggregationWithoutEventOldNotifications(t *testing.T) {
 	a := makeAggregation(makeNotification(testEmail), makeNotification(testEmail))
-	a.LastSaved = time.Now().UTC().Add(time.Hour * -4)
+	a.LastUpdated = time.Now().UTC().Add(time.Hour * -4)
 	n, s := Strategy(nil, a)
 
 	if n == nil {

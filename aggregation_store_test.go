@@ -37,7 +37,7 @@ func TestSave(t *testing.T) {
 	}
 }
 
-func TestSaveUpdatesLastSaved(t *testing.T) {
+func TestSaveUpdatesLastUpdated(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 	oldClock := clock
@@ -56,8 +56,8 @@ func TestSaveUpdatesLastSaved(t *testing.T) {
 
 	loaded, err := store.Get(testEmail)
 	fatalIfError(t, err)
-	if !loaded.LastSaved.Equal(lastUpdated) {
-		t.Fatalf("last updated field not changed: got %v, wanted %v", loaded.LastSaved, lastUpdated)
+	if !loaded.LastUpdated.Equal(lastUpdated) {
+		t.Fatalf("last updated field not changed: got %v, wanted %v", loaded.LastUpdated, lastUpdated)
 	}
 }
 
@@ -189,7 +189,7 @@ func createBadgerStore(t *testing.T) (*AggregateStore, func()) {
 func makeAggregation(n ...*SecurityNotification) *Aggregation {
 	return &Aggregation{
 		Email:         testEmail,
-		LastSaved:     time.Now().UTC(),
+		LastUpdated:   time.Now().UTC(),
 		Notifications: n,
 	}
 }
