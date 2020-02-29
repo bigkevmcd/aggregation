@@ -223,3 +223,8 @@ func (p *mockAggregationProcessor) Process(a *Aggregation) (*Aggregation, error)
 	p.count++
 	return nil, p.err
 }
+
+func (p *mockAggregationProcessor) ProcessWithoutEvent(a *Aggregation) (*Aggregation, error) {
+	p.count++
+	return nil, p.err
+}

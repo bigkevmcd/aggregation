@@ -47,7 +47,7 @@ func TestAggregationPublishesOnHighPriorityEvent(t *testing.T) {
 
 func TestAggregationWithoutEventAndEmptyState(t *testing.T) {
 	oldState := makeAggregation()
-	n, s := Strategy(nil, oldState)
+	n, s := StrategyWithoutEvent(oldState)
 
 	if n != nil {
 		t.Fatalf("unexpectedly received a notification: got %#v", n)
@@ -60,7 +60,7 @@ func TestAggregationWithoutEventAndEmptyState(t *testing.T) {
 func TestAggregationWithoutEventOldNotifications(t *testing.T) {
 	a := makeAggregation(makeNotification(testEmail), makeNotification(testEmail))
 	a.LastUpdated = time.Now().UTC().Add(time.Hour * -4)
-	n, s := Strategy(nil, a)
+	n, s := StrategyWithoutEvent(a)
 
 	if n == nil {
 		t.Fatal("expected a notification, got nil")

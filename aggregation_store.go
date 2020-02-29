@@ -114,7 +114,7 @@ func processItem(txn *badger.Txn, item *badger.Item, key []byte, p AggregationPr
 		if err != nil {
 			return err
 		}
-		newState, err := p.Process(state)
+		newState, err := p.ProcessWithoutEvent(state)
 		if err != nil {
 			return err
 		}

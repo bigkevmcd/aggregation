@@ -31,6 +31,10 @@ func Strategy(evt *SecurityNotification, s *Aggregation) (*AggregateNotification
 	return nil, s
 }
 
+func StrategyWithoutEvent(s *Aggregation) (*AggregateNotification, *Aggregation) {
+	return nil, nil
+}
+
 func processAggregationWithoutEvent(s *Aggregation) (*AggregateNotification, *Aggregation) {
 	cutOffTime := clock().Add(time.Hour * -3)
 	if s.LastUpdated.Before(cutOffTime) {

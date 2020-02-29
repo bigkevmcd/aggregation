@@ -4,6 +4,8 @@ Go implementation of the Aggregator pattern.
 
 This accompanies a series of blogposts on the subject.
 
+**This code is not complete.**
+
 * https://bigkevmcd.github.io/patterns/events/aggregator/2019/08/11/aggregator-pattern-part-1.html
 * https://bigkevmcd.github.io/patterns/events/aggregator/2019/08/12/aggregator-pattern-part-2.html
 * https://bigkevmcd.github.io/patterns/events/aggregator/2019/08/13/aggregator-pattern-part-3.html

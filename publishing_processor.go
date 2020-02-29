@@ -5,8 +5,8 @@ import "log"
 type PublishingProcessor struct {
 }
 
-func (p *PublishingProcessor) Process(evt *SecurityNotification, oldState *Aggregation) (*Aggregation, error) {
-	notification, newState := Strategy(evt, oldState)
+func (p *PublishingProcessor) Process(evt *SecurityNotification, existingState *Aggregation) (*Aggregation, error) {
+	notification, newState := Strategy(evt, existingState)
 	if notification == nil {
 		return newState, nil
 	}
@@ -16,7 +16,7 @@ func (p *PublishingProcessor) Process(evt *SecurityNotification, oldState *Aggre
 }
 
 func (p *PublishingProcessor) ProcessWithoutEvent(existingState *Aggregation) (*Aggregation, error) {
-	notification, newState := StrategyWithoutEvent(oldState)
+	notification, newState := StrategyWithoutEvent(existingState)
 	if notification == nil {
 		return newState, nil
 	}
